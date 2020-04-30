@@ -1,0 +1,15 @@
+{
+  "name": "info-med",
+  "version": "1.0.0",
+  "description": "Webhook for Info-Med Bot app",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm start"
+  },
+  "author": "Gerardo Silva",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "morgan": "^1.10.0"
+  }
+}
