@@ -23,7 +23,7 @@ async function runSample(textInput, projectId = 'covid-app-275822') {
   // Create a new session
   const sessionClient = new dialogflow.SessionsClient({
     // Path to the key file
-    keyFilename: "/Users/gerardosilvarazo/info-med webhook/key.json"
+    keyFilename: "./key.json"
   });
   const sessionPath = sessionClient.sessionPath(projectId, sessionId);
 
