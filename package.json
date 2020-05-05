@@ -4,12 +4,14 @@
   "description": "Webhook for Info-Med Bot app",
   "main": "index.js",
   "scripts": {
-    "test": "npm start"
+    "test": "node index.js"
   },
   "author": "Gerardo Silva",
   "license": "ISC",
   "dependencies": {
+    "dialogflow": "^1.2.0",
     "express": "^4.17.1",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "uuid": "^8.0.0"
   }
 }
