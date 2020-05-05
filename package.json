@@ -4,7 +4,7 @@
   "description": "Webhook for Info-Med Bot app",
   "main": "index.js",
   "scripts": {
-    "test": "node index.js"
+    "start": "node index.js"
   },
   "author": "Gerardo Silva",
   "license": "ISC",
