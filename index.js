@@ -104,8 +104,6 @@ function closeServer() {
     server.close(err => {
         if (err) {
             return reject(err);
-        } else {
-            resolve();
         }
     });
 }
