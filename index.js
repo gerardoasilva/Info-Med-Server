@@ -13,17 +13,17 @@ app.use(morgan("dev"));
 
 /**
  * Send a query to the Dialogflow agent, and return the query result
- * @param {string} textInput The user's input
+ * @param {string} text The user's input
  * @param {string} projectId The project to be used
  */
-async function runSample(textInput, projectId = 'covid-app-275822') {
+async function query(text, projectId = 'covid-app-275822') {
   // A unique identifier for the given session
   const sessionId = uuid.v4();
 
   // Create a new session
   const sessionClient = new dialogflow.SessionsClient({
     // Path to the key file
-    keyFilename: "./key.json"
+    keyFilename: __dirname+'/key.json'
   });
   const sessionPath = sessionClient.sessionPath(projectId, sessionId);
 
@@ -33,7 +33,7 @@ async function runSample(textInput, projectId = 'covid-app-275822') {
     queryInput: {
       text: {
         // The query to send to the dialogflow agent
-        text: textInput,
+        text: text,
         // The language used by the client (es) for spanish
         languageCode: 'es',
       },
@@ -56,21 +56,21 @@ async function runSample(textInput, projectId = 'covid-app-275822') {
  * GET - API Endpoint
  * Returns response to the intent detected by Dialogflow
  */
-app.get("/info-med-bot/api/detectIntent/:id", jsonParser, (req, res) => {
+app.post("/api/faq/detectIntent/:id", jsonParser, (req, res) => {
 
   // Validate HTTP Request's Body
-  if (!req.body.textInput) {
-    res.statusMessage = "No es posible responder, falta entrada.";
+  if (!req.body.text || !req.body.sender) {
+    res.statusMessage = "Request's body message incomplete.";
     return res.status(406).send();
   }
 
-  // Store user id and textInput from request
-  let textInput = req.body.textInput;
+  // Store user id and text from request
+  let text = req.body.text;
   let id = req.params.id;
 
-  // Async function to call runSample and get a response from dialogflow
+  // Async function to call query() and get a response from dialogflow
   (async () => {
-    let result = await runSample(textInput);
+    let result = await query(text);
 
   // Intent not found
   if (!result.intent) {
