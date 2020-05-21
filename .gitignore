@@ -2,3 +2,5 @@ node_modules
 .DS_Store
 package-lock.json
 key.json
+Cuestionario-Info-Med.json
+PreguntasFrecuentes-Info-Med.json

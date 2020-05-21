@@ -2,30 +2,70 @@ let express = require("express"),
   morgan = require("morgan"),
   bodyParser = require("body-parser"),
   jsonParser = bodyParser.json(),
-  dialogflow = require('dialogflow'),
+  dialogflow = require('@google-cloud/dialogflow'),
   uuid = require('uuid'),
-  { PORT } = require("./config"),
+  { PORT, FAQ, FAQ_ID, FAQ_KEY, QUESTIONNAIRE, QUESTIONNAIRE_ID, QUESTIONNAIRE_KEY } = require("./config"),
   app = express(),
   server;
 
 app.use(morgan("dev"));
 
 
-/**
+// /** original
+//  * Send a query to the Dialogflow agent, and return the query result
+//  * @param {string} text The user's input
+//  * @param {string} projectId The project to be used
+//  */
+// async function query(text, projectId) {
+//   // A unique identifier for the given session
+//   const sessionId = uuid.v4();
+
+//   // Create a new session
+//   const sessionClient = new dialogflow.SessionsClient({
+//     // Path to the key file
+//     keyFilename: __dirname+'/key.json'
+//   });
+//   const sessionPath = sessionClient.sessionPath(projectId, sessionId);
+
+//   // The text query request.
+//   const request = {
+//     session: sessionPath,
+//     queryInput: {
+//       text: {
+//         // The query to send to the dialogflow agent
+//         text: text,
+//         // The language used by the client (es) for spanish
+//         languageCode: 'es',
+//       },
+//     },
+//   };
+
+//   // Send request and log result
+//   const responses = await sessionClient.detectIntent(request);
+//   // console.log('Detected intent');
+//   const result = responses[0].queryResult;
+//   // console.log(`  Query: ${result.queryText}`);
+//   // console.log(`${result.fulfillmentText}`);
+//   return await result;
+// }
+
+/** 
  * Send a query to the Dialogflow agent, and return the query result
- * @param {string} text The user's input
- * @param {string} projectId The project to be used
+ * @param {string} projectId The ID of the project in Dialogflow
+ * @param {string} text The query of the user
+ * @param {outputContexts} contexts The contexts from Dialogflow's previous response
+ * @param {string} key The name of the file that contains the API's client-key
  */
-async function query(text, projectId = 'covid-app-275822') {
+async function findIntent(projectId, text, contexts, key) {
   // A unique identifier for the given session
   const sessionId = uuid.v4();
 
   // Create a new session
   const sessionClient = new dialogflow.SessionsClient({
     // Path to the key file
-    keyFilename: __dirname+'/key.json'
+    keyFilename: __dirname+key
   });
-  const sessionPath = sessionClient.sessionPath(projectId, sessionId);
+  const sessionPath = sessionClient.projectAgentSessionPath(projectId, sessionId);
 
   // The text query request.
   const request = {
@@ -37,6 +77,9 @@ async function query(text, projectId = 'covid-app-275822') {
         // The language used by the client (es) for spanish
         languageCode: 'es',
       },
+    },
+    queryParams: {
+      contexts: contexts
     },
   };
 
@@ -50,27 +93,114 @@ async function query(text, projectId = 'covid-app-275822') {
 }
 
 
+/**
+ * POST - API Endpoint
+ * Returns JSON response to the intent detected by Agent: 'PENDIENTE'
+ */
+// app.post("/api/faq/detectIntent", jsonParser, (req, res) => {
+
+//   // Validate HTTP Request's Body
+//   if (!req.body.text || !req.body.sender) {
+//     res.statusMessage = "Request's body message incomplete.";
+//     return res.status(406).send();
+//   }
+
+//   // Store text from request
+//   let text = req.body.text;
+//   let projectId = 'covid-app-275822';
+
+//   // Async function to call query() and get a response from dialogflow
+//   (async () => {
+//     let result = await findIntent(text, projectId);
+
+//   // Intent not found
+//   if (!result.intent) {
+//     res.statusMessage = "No se ha encontrado una respuesta a la entrada.";
+//     return res.status(404).send();
+//   }
+
+//   // Return JSON object with API's response 
+//   return res.status(200).json(result);
+//   })();
+// });
+
+
 
 
 /**
- * GET - API Endpoint
- * Returns response to the intent detected by Dialogflow
+ * POST - API Endpoint
+ * Returns JSON response to the intent detected by Agent: 'Cuestionario-Info-Med'
  */
-app.post("/api/faq/detectIntent/:id", jsonParser, (req, res) => {
+// app.post("/api/questionnaire/detectIntent", jsonParser, (req, res) => {
+
+//   // Validate HTTP Request's Body
+//   if (!req.body.query || !req.body.contexts) {
+//     res.statusMessage = "Request's body message incomplete.";
+//     return res.status(406).send();
+//   }
+
+//   // Store query from request
+//   let query = req.body.query; // User's text
+//   let contexts = req.body.contexts // Intent's contexts
+//   let projectId = 'cuestionario-info-med-cxoqvy';
+//   let apiKey = '/Cuestionario-Info-Med.json';
+
+//   // Async function to call findIntent() and get a response to the user input from Dialogflow
+//   (async () => {
+//     let result = await findIntent(projectId, query, contexts, apiKey);
+
+//   // Intent not found
+//   if (!result.intent) {
+//     res.statusMessage = "No se ha encontrado una respuesta a la entrada.";
+//     return res.status(404).send();
+//   }
+
+//   // Return JSON object with API's response
+//   return res.status(200).json(result);
+//   })();
+// });
+
+
+
+/**
+ * POST - API Endpoint
+ * Receives as parameter the agent to query to.
+ * Receives as body the user's query and contexts from conversation
+ * Returns JSON response to the intent detected by the corresponding agent
+ */
+app.post("/api/:agent/detectIntent", jsonParser, (req, res) => {
+
+  // Validate HTTP Request params
+  if (!req.params.agent || req.params.agent != FAQ && req.params.agent != QUESTIONNAIRE) {
+    res.statusMessage = "Request param is wrong or missing.";
+    return res.status(406).send();
+  }
 
   // Validate HTTP Request's Body
-  if (!req.body.text || !req.body.sender) {
+  if (!req.body.query || !req.body.contexts) {
     res.statusMessage = "Request's body message incomplete.";
     return res.status(406).send();
   }
 
-  // Store user id and text from request
-  let text = req.body.text;
-  let id = req.params.id;
+  let projectId, apiKey;
 
-  // Async function to call query() and get a response from dialogflow
+  // Initialize variables depending on the agent
+  if (req.params.agent == FAQ) {
+    projectId = FAQ_ID;
+    apiKey = FAQ_KEY;
+  }
+  else {
+    projectId = QUESTIONNAIRE_ID;
+    apiKey = QUESTIONNAIRE_KEY;
+  }
+
+  // Store query from request
+  let query = req.body.query; // User's text
+  let contexts = req.body.contexts; // Intent's contexts
+
+  // Async function to call findIntent() and get a response to the user input from Dialogflow
   (async () => {
-    let result = await query(text);
+    let result = await findIntent(projectId, query, contexts, apiKey);
 
   // Intent not found
   if (!result.intent) {
@@ -78,10 +208,13 @@ app.post("/api/faq/detectIntent/:id", jsonParser, (req, res) => {
     return res.status(404).send();
   }
 
-  // Returns object with all results
+  // Return JSON object with API's response
   return res.status(200).json(result);
   })();
 });
+
+
+
 
 /**
  * Run the server in specific port
