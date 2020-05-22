@@ -177,7 +177,7 @@ app.post("/api/:agent/detectIntent", jsonParser, (req, res) => {
   }
 
   // Validate HTTP Request's Body
-  if (!req.body.query || !req.body.contexts) {
+  if (!req.body.query) {
     res.statusMessage = "Request's body message incomplete.";
     return res.status(406).send();
   }
