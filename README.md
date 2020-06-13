@@ -1,5 +1,5 @@
-<h1>Info-Med Webhook</h1>
-<p>This is a Node.js webhook that gives service to the Info-Med Bot app in iOS</p>
+<h1>Info-Med Server</h1>
+<p>This is a Node.js proxy server that gives service to the Info-Med Bot app in iOS</p>
 <p></p>
 <p>It requires the following npm installations:</p>
 <ul>
